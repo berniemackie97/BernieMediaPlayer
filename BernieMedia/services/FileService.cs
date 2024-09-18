@@ -26,6 +26,11 @@ namespace BernieMedia.services
             return null;
         }
 
+        public string GetFileName(string filePath)
+        {
+            return Path.GetFileName(filePath);
+        }
+
         public bool IsAudioFile(string filePath)
         {
             string extension = Path.GetExtension(filePath).ToLower();
