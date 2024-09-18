@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Windows.Threading;
 using LibVLCSharp.Shared;
 using NAudio.Wave;
 
@@ -11,18 +10,16 @@ namespace BernieMedia
         private AudioFileReader _audioFileReader;
         private LibVLC _libVLC;
         private MediaPlayer _mediaPlayer;
-        private DispatcherTimer _timer;
         public bool IsAudioPlaying { get; private set; }
         public bool IsVideoPlaying { get; private set; }
         public event Action MediaEnded;
 
-        public MediaService(DispatcherTimer timer)
+        public MediaService()
         {
             Core.Initialize();
             _libVLC = new LibVLC();
             _mediaPlayer = new MediaPlayer(_libVLC);
             _mediaPlayer.EndReached += MediaPlayer_EndReached;
-            _timer = timer;
         }
 
         private void MediaPlayer_EndReached(object sender, EventArgs e)
@@ -59,7 +56,6 @@ namespace BernieMedia
                     _waveOutDevice.Play();
                     IsAudioPlaying = true;
                     IsVideoPlaying = false;
-                    _timer.Start();
                 }
                 else if (fileService.IsVideoFile(filePath))
                 {
@@ -72,7 +68,6 @@ namespace BernieMedia
             }
         }
 
-
         public void PauseMedia()
         {
             if (IsAudioPlaying)
@@ -83,7 +78,6 @@ namespace BernieMedia
             {
                 _mediaPlayer.Pause();
             }
-            _timer.Stop();
         }
 
         public void StopMedia()
@@ -100,7 +94,6 @@ namespace BernieMedia
                 _mediaPlayer.Stop();
                 IsVideoPlaying = false;
             }
-            _timer.Stop();
         }
 
         public double GetCurrentTime()

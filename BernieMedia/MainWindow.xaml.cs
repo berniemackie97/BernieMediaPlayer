@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
+using BernieMedia.helpers;
 using BernieMedia.services;
+using LibVLCSharp.Shared;
 using LibVLCSharp.WPF;
+using System.Threading.Tasks;
 
 namespace BernieMedia
 {
@@ -12,17 +14,13 @@ namespace BernieMedia
         private readonly IMediaService _mediaService;
         private readonly IFileService _fileService;
         private readonly IPlaylistService _playlistService;
+        private bool _isSliderDragging;
 
         public MainWindow()
         {
             InitializeComponent();
-            DispatcherTimer timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(500)
-            };
-            timer.Tick += Timer_Tick;
 
-            _mediaService = new MediaService(timer);
+            _mediaService = new MediaService();
             _mediaService.MediaEnded += MediaService_MediaEnded;
             VideoView.MediaPlayer = _mediaService.GetMediaPlayer();
 
@@ -30,6 +28,9 @@ namespace BernieMedia
             _playlistService = new PlaylistService();
 
             DataContext = this;
+
+            // Subscribe to the TimeChanged event
+            VideoView.MediaPlayer.TimeChanged += MediaPlayer_TimeChanged;
         }
 
         public ICommand UploadCommand => new RelayCommand(UploadMedia);
@@ -38,7 +39,7 @@ namespace BernieMedia
         public ICommand NextCommand => new RelayCommand(PlayNextMedia);
         public ICommand BackCommand => new RelayCommand(PlayPreviousMedia);
 
-        private void UploadMedia()
+        private async void UploadMedia()
         {
             string filePath = _fileService.SelectMediaFile();
             if (!string.IsNullOrEmpty(filePath))
@@ -52,8 +53,8 @@ namespace BernieMedia
 
                 if (wasPlaylistEmpty)
                 {
-                    _mediaService.PlayMedia(filePath, _fileService);
-                    PlayButton.Content = "Pause";
+                    await Task.Run(() => _mediaService.PlayMedia(filePath, _fileService));
+                    Dispatcher.Invoke(() => PlayButton.Content = "Pause");
                 }
 
                 Playlist.SelectedIndex = Playlist.Items.Count - 1;
@@ -61,56 +62,68 @@ namespace BernieMedia
             }
         }
 
-        private void PlayMedia()
+        private async void PlayMedia()
         {
             if (PlayButton.Content.ToString() == "Play")
             {
                 if (Playlist.Items.Count > 0)
                 {
                     string filePath = _playlistService.GetMediaAt(Playlist.SelectedIndex);
-                    _mediaService.PlayMedia(filePath, _fileService);
-                    PlayButton.Content = "Pause";
-                    StopButton.IsEnabled = true;
+                    await Task.Run(() => _mediaService.PlayMedia(filePath, _fileService));
+                    Dispatcher.Invoke(() =>
+                    {
+                        PlayButton.Content = "Pause";
+                        StopButton.IsEnabled = true;
+                    });
                 }
             }
             else
             {
-                _mediaService.PauseMedia();
-                PlayButton.Content = "Play";
+                await Task.Run(() => _mediaService.PauseMedia());
+                Dispatcher.Invoke(() => PlayButton.Content = "Play");
             }
         }
 
-        private void StopMedia()
+        private async void StopMedia()
         {
-            _mediaService.StopMedia();
-            PlayButton.Content = "Play";
-            StopButton.IsEnabled = false;
+            await Task.Run(() => _mediaService.StopMedia());
+            Dispatcher.Invoke(() =>
+            {
+                PlayButton.Content = "Play";
+                StopButton.IsEnabled = false;
+            });
         }
 
-        private void PlayNextMedia()
+        private async void PlayNextMedia()
         {
             int currentIndex = Playlist.SelectedIndex;
             string filePath = _playlistService.GetNextMedia(currentIndex);
             if (filePath != null)
             {
-                _mediaService.PlayMedia(filePath, _fileService);
-                Playlist.SelectedIndex = currentIndex + 1;
-                PlayButton.Content = "Pause";
-                StopButton.IsEnabled = true;
+                await Task.Run(() => _mediaService.PlayMedia(filePath, _fileService));
+                Dispatcher.Invoke(() =>
+                {
+                    Playlist.SelectedIndex = currentIndex + 1;
+                    PlayButton.Content = "Pause";
+                    StopButton.IsEnabled = true;
+                });
             }
             UpdateNavigationButtons();
         }
 
-        private void PlayPreviousMedia()
+        private async void PlayPreviousMedia()
         {
             int currentIndex = Playlist.SelectedIndex;
             string filePath = _playlistService.GetPreviousMedia(currentIndex);
             if (filePath != null)
             {
-                _mediaService.PlayMedia(filePath, _fileService);
-                Playlist.SelectedIndex = currentIndex - 1;
-                PlayButton.Content = "Pause";
-                StopButton.IsEnabled = true;
+                await Task.Run(() => _mediaService.PlayMedia(filePath, _fileService));
+                Dispatcher.Invoke(() =>
+                {
+                    Playlist.SelectedIndex = currentIndex - 1;
+                    PlayButton.Content = "Pause";
+                    StopButton.IsEnabled = true;
+                });
             }
             UpdateNavigationButtons();
         }
@@ -122,42 +135,45 @@ namespace BernieMedia
             BackButton.IsEnabled = currentIndex > 0;
         }
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void MediaPlayer_TimeChanged(object sender, MediaPlayerTimeChangedEventArgs e)
         {
-            TimeSlider.Value = _mediaService.GetCurrentTime();
-            TimeSlider.Maximum = _mediaService.GetTotalTime();
+            // Use the Dispatcher to update the UI from the UI thread
+            Dispatcher.Invoke(() =>
+            {
+                if (!_isSliderDragging)
+                {
+                    // Update the slider value based on the current playback time
+                    TimeSlider.Value = e.Time / 1000.0; // Convert milliseconds to seconds
+                    TimeSlider.Maximum = VideoView.MediaPlayer.Length / 1000.0; // Convert milliseconds to seconds
+                }
+            });
         }
 
         private void TimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            _mediaService.SetCurrentTime(TimeSlider.Value);
+            if (_isSliderDragging)
+            {
+                // Set the media player's current time based on the slider value
+                VideoView.MediaPlayer.Time = (long)(TimeSlider.Value * 1000); // Convert seconds to milliseconds
+            }
         }
+
+        private void TimeSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+        {
+            _isSliderDragging = true;
+        }
+
+        private void TimeSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            _isSliderDragging = false;
+            // Set the media player's current time based on the slider value
+            VideoView.MediaPlayer.Time = (long)(TimeSlider.Value * 1000); // Convert seconds to milliseconds
+        }
+
 
         private void MediaService_MediaEnded()
         {
             PlayNextMedia();
-        }
-    }
-
-    public class RelayCommand : ICommand
-    {
-        private readonly Action _execute;
-        private readonly Func<bool> _canExecute;
-
-        public RelayCommand(Action execute, Func<bool> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object parameter) => _canExecute == null || _canExecute();
-
-        public void Execute(object parameter) => _execute();
-
-        public event EventHandler CanExecuteChanged
-        {
-            add => CommandManager.RequerySuggested += value;
-            remove => CommandManager.RequerySuggested -= value;
         }
     }
 }

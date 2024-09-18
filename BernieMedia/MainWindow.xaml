@@ -14,18 +14,37 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2">
-            <Button Content="Upload" Command="{Binding UploadCommand}" Margin="5" />
-            <Button Content="Play" Command="{Binding PlayCommand}" x:Name="PlayButton" Margin="5" />
-            <Button Content="Stop" Command="{Binding StopCommand}" x:Name="StopButton" IsEnabled="False" Margin="5" />
-            <Button Content="Next" Command="{Binding NextCommand}" x:Name="NextButton" Margin="5" />
-            <Button Content="Back" Command="{Binding BackCommand}" x:Name="BackButton" Margin="5" />
+        <!-- Control Panel -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2" Background="#333" Margin="10">
+            <Button Content="Upload" Command="{Binding UploadCommand}" Margin="5" Width="75" />
+            <Button Content="Play" Command="{Binding PlayCommand}" x:Name="PlayButton" IsEnabled="False" Margin="5" Width="75" />
+            <Button Content="Stop" Command="{Binding StopCommand}" x:Name="StopButton" IsEnabled="False" Margin="5" Width="75" />
+            <Button Content="Next" Command="{Binding NextCommand}" x:Name="NextButton" IsEnabled="False" Margin="5" Width="75" />
+            <Button Content="Back" Command="{Binding BackCommand}" x:Name="BackButton" IsEnabled="False" Margin="5" Width="75" />
         </StackPanel>
 
-        <vlc:VideoView x:Name="VideoView" Grid.Row="1" Grid.Column="1" Margin="5" />
+        <!-- Video View -->
+        <vlc:VideoView x:Name="VideoView" Grid.Row="1" Grid.Column="1" Margin="5" Background="Black" />
 
-        <ListBox x:Name="Playlist" Grid.Row="1" Grid.Column="0" Margin="5" />
+        <!-- Playlist -->
+        <ListBox x:Name="Playlist" Grid.Row="1" Grid.Column="0" Margin="5" Background="#222" Foreground="White" />
 
-        <Slider x:Name="TimeSlider" ValueChanged="TimeSlider_ValueChanged" Grid.Row="2" Grid.ColumnSpan="2" Margin="5" />
+        <!-- Slider -->
+        <Slider x:Name="TimeSlider" ValueChanged="TimeSlider_ValueChanged" 
+                Grid.Row="2" Grid.ColumnSpan="2" Margin="10" Height="20">
+            <Slider.Template>
+                <ControlTemplate TargetType="Slider">
+                    <Grid>
+                        <Border Background="#444" Height="10" VerticalAlignment="Center">
+                            <Track Name="PART_Track">
+                                <Track.Thumb>
+                                    <Thumb DragStarted="TimeSlider_DragStarted" DragCompleted="TimeSlider_DragCompleted" Background="#888" Width="15" Height="15"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Slider.Template>
+        </Slider>
     </Grid>
 </Window>
