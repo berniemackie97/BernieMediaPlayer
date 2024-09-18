@@ -2,20 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
+        Title="MainWindow" Height="576" Width="905">
+    <DockPanel LastChildFill="True">
         <!-- Control Panel -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2" Background="#333" Margin="10">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Background="#333" Margin="10">
             <Button Content="Upload" Command="{Binding UploadCommand}" Margin="5" Width="75" />
             <Button Content="Play" Command="{Binding PlayCommand}" x:Name="PlayButton" IsEnabled="False" Margin="5" Width="75" />
             <Button Content="Stop" Command="{Binding StopCommand}" x:Name="StopButton" IsEnabled="False" Margin="5" Width="75" />
@@ -23,15 +13,9 @@
             <Button Content="Back" Command="{Binding BackCommand}" x:Name="BackButton" IsEnabled="False" Margin="5" Width="75" />
         </StackPanel>
 
-        <!-- Video View -->
-        <vlc:VideoView x:Name="VideoView" Grid.Row="1" Grid.Column="1" Margin="5" Background="Black" />
-
-        <!-- Playlist -->
-        <ListBox x:Name="Playlist" Grid.Row="1" Grid.Column="0" Margin="5" Background="#222" Foreground="White" />
-
         <!-- Slider -->
         <Slider x:Name="TimeSlider" ValueChanged="TimeSlider_ValueChanged" 
-                Grid.Row="2" Grid.ColumnSpan="2" Margin="10" Height="20">
+                DockPanel.Dock="Bottom" Margin="10" Height="20">
             <Slider.Template>
                 <ControlTemplate TargetType="Slider">
                     <Grid>
@@ -46,5 +30,19 @@
                 </ControlTemplate>
             </Slider.Template>
         </Slider>
-    </Grid>
+
+        <!-- Main Content -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Playlist -->
+            <ListBox x:Name="Playlist" Grid.Column="0" Margin="5" Background="#222" Foreground="White" Width="200" />
+
+            <!-- Video View -->
+            <vlc:VideoView x:Name="VideoView" Grid.Column="1" Margin="5" Background="Black" />
+        </Grid>
+    </DockPanel>
 </Window>
